@@ -20,4 +20,4 @@ node_modules
 
 *.sqlite
 
-./db/inserts.sql
+inserts.sql
