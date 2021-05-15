@@ -25,17 +25,19 @@ func initTables(db *sql.DB) {
 func insertData(db *sql.DB) {
 	inserts, err := ioutil.ReadFile("./db/inserts.sql")
 
-	log.Println("inserts", string(inserts))
+	if err != nil {
+		log.Panic(err)
+	}
+
+	// log.Println("inserts", string(inserts))
 
 	tx, err := db.Begin()
-
-	stmt, err := tx.Prepare(string(inserts))
 
 	if err != nil {
 		log.Panic(err)
 	}
 
-	res2, err := stmt.Exec()
+	res2, err := tx.Exec(string(inserts))
   if err != nil {
       log.Panic(err)
   }

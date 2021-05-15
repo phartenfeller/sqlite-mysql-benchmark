@@ -15,3 +15,9 @@
 # vendor/
 
 dev.hartenfeller.sqlite-mysql-becnhmark
+
+node_modules
+
+*.sqlite
+
+./db/inserts.sql
