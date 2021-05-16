@@ -15,7 +15,7 @@ import (
 )
 
 func initTables(db *sql.DB) {
-	dbTables, err := ioutil.ReadFile("./db/tables.sql")
+	dbTables, err := ioutil.ReadFile("../db/tables.sql")
 
 	if err != nil {
 		log.Panic(err)
@@ -32,7 +32,7 @@ func initTables(db *sql.DB) {
 }
 
 func insertData(db *sql.DB) {
-	inserts, err := ioutil.ReadFile("./db/inserts.sql")
+	inserts, err := ioutil.ReadFile("../db/inserts.sql")
 
 	if err != nil {
 		log.Panic(err)
