@@ -1,4 +1,4 @@
-module dev.hartenfeller.sqlite-mysql-becnhmark
+module dev.hartenfeller.sqlite-mysql-benchmark
 
 go 1.16
 
