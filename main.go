@@ -19,6 +19,10 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
+func logError(err error) {
+	log.Println("[error] " + err.Error())
+}
+
 // SendJSONError returns an Error response in JSON format
 func SendJSONError(w http.ResponseWriter, message string, code int) {
 	w.WriteHeader(code)
@@ -42,6 +46,7 @@ func blogPostHandler(w http.ResponseWriter, r *http.Request) {
 	post, err := goDbApi.GetBlogpostById(params["id"])
 
 	if err != nil {
+		logError(err)
 		SendJSONErrorLog(w, "Unexpected server error", http.StatusInternalServerError, "Cannot query blogpost: "+err.Error())
 		return
 	}
@@ -59,11 +64,65 @@ func randomBlogPostHandler(w http.ResponseWriter, r *http.Request) {
 	post, err := goDbApi.GetBlogpostById(fmt.Sprint(id))
 
 	if err != nil {
+		logError(err)
 		SendJSONErrorLog(w, "Unexpected server error - " + fmt.Sprint(id), http.StatusInternalServerError, "Cannot query blogpost: "+err.Error())
 		return
 	}
 
 	json.NewEncoder(w).Encode(post)
+}
+
+func driverResultsYearHandler(w http.ResponseWriter, r *http.Request) {
+	year := 2020
+	standings, err := goDbApi.GetLastDriverStandingsByYear(year)
+
+	if err != nil {
+		logError(err)
+		SendJSONErrorLog(w, "Unexpected server error - ", http.StatusInternalServerError, "Cannot query driver standings: "+err.Error())
+		return
+	}
+
+	json.NewEncoder(w).Encode(standings)
+}
+
+func avgPitstopsHandler(w http.ResponseWriter, r *http.Request) {
+	raceID := 841
+	pstops, err := goDbApi.GetRaceDriverAvgPitstops(raceID)
+
+	if err != nil {
+		logError(err)
+		SendJSONErrorLog(w, "Unexpected server error - ", http.StatusInternalServerError, "Cannot query pitstops: "+err.Error())
+		return
+	}
+
+	json.NewEncoder(w).Encode(pstops)
+}
+
+
+func avgLapTimesHandler(w http.ResponseWriter, r *http.Request) {
+	raceID := 841
+	lapTimes, err := goDbApi.GetAvgBestLapTimes(raceID)
+
+	if err != nil {
+		logError(err)
+		SendJSONErrorLog(w, "Unexpected server error - ", http.StatusInternalServerError, "Cannot query avg laptimes: "+err.Error())
+		return
+	}
+
+	json.NewEncoder(w).Encode(lapTimes)
+}
+
+func raceDetailsHandler(w http.ResponseWriter, r *http.Request) {
+	raceID := 841
+	details, err := goDbApi.GetRaceDetails(raceID)
+
+	if err != nil {
+		logError(err)
+		SendJSONErrorLog(w, "Unexpected server error - ", http.StatusInternalServerError, "Cannot query race details: "+err.Error())
+		return
+	}
+
+	json.NewEncoder(w).Encode(details)
 }
 
 
@@ -84,6 +143,10 @@ func main() {
 
 	r.HandleFunc("/api/blogPost/{id}", blogPostHandler).Methods("GET")
 	r.HandleFunc("/api/randomBlogPost", randomBlogPostHandler).Methods("GET")
+	r.HandleFunc("/api/driverResultsYear", driverResultsYearHandler).Methods("GET")
+	r.HandleFunc("/api/avgPitsotps", avgPitstopsHandler).Methods("GET")
+	r.HandleFunc("/api/avgLaptimes", avgLapTimesHandler).Methods("GET")
+	r.HandleFunc("/api/raceDetails", raceDetailsHandler).Methods("GET")
 
 	address := "localhost:8098"
 
