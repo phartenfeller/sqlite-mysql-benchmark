@@ -16,6 +16,12 @@ func initPg() (*sql.DB, error)  {
 
 	}
 
+	err = db.Ping()
+	if err != nil {
+		return nil, errors.New("Error initializing Postgres" + err.Error())
+	}
+
+
 	log.Println("Initilized Postgres...")
 
 	return db, nil

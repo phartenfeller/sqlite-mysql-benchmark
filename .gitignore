@@ -25,3 +25,4 @@ inserts.sql
 
 db/
 local.env
+results/
