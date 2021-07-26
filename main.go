@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -38,42 +36,8 @@ func SendJSONErrorLog(w http.ResponseWriter, message string, code int, errMessag
 
 var reqcnt int;
 
-func blogPostHandler(w http.ResponseWriter, r *http.Request) {
-	reqcnt++
-	log.Println("req", reqcnt);
-	params := mux.Vars(r)
-
-	post, err := goDbApi.GetBlogpostById(params["id"])
-
-	if err != nil {
-		logError(err)
-		SendJSONErrorLog(w, "Unexpected server error", http.StatusInternalServerError, "Cannot query blogpost: "+err.Error())
-		return
-	}
-
-	json.NewEncoder(w).Encode(post)
-}
-
-func randomBlogPostHandler(w http.ResponseWriter, r *http.Request) {
-	reqcnt++
-	log.Println("req", reqcnt);
-
-	id := rand.Intn(goDbApi.Posts - 1) + 1
-	log.Println("id", id)
-
-	post, err := goDbApi.GetBlogpostById(fmt.Sprint(id))
-
-	if err != nil {
-		logError(err)
-		SendJSONErrorLog(w, "Unexpected server error - " + fmt.Sprint(id), http.StatusInternalServerError, "Cannot query blogpost: "+err.Error())
-		return
-	}
-
-	json.NewEncoder(w).Encode(post)
-}
-
 func driverResultsYearHandler(w http.ResponseWriter, r *http.Request) {
-	year := 2020
+	year := goDbApi.GetRandomSeason()
 	standings, err := goDbApi.GetLastDriverStandingsByYear(year)
 
 	if err != nil {
@@ -86,7 +50,7 @@ func driverResultsYearHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func avgPitstopsHandler(w http.ResponseWriter, r *http.Request) {
-	raceID := 841
+	raceID := goDbApi.GetRandomRaceId()
 	pstops, err := goDbApi.GetRaceDriverAvgPitstops(raceID)
 
 	if err != nil {
@@ -95,12 +59,17 @@ func avgPitstopsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if (len(pstops) == 0) {
+		SendJSONErrorLog(w, "No pitstops found", http.StatusOK, "")
+		return
+	}
+
 	json.NewEncoder(w).Encode(pstops)
 }
 
 
 func avgLapTimesHandler(w http.ResponseWriter, r *http.Request) {
-	raceID := 841
+	raceID := goDbApi.GetRandomRaceId()
 	lapTimes, err := goDbApi.GetAvgBestLapTimes(raceID)
 
 	if err != nil {
@@ -109,11 +78,16 @@ func avgLapTimesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if (len(lapTimes) == 0) {
+		SendJSONErrorLog(w, "No times found", http.StatusOK, "")
+		return
+	}
+
 	json.NewEncoder(w).Encode(lapTimes)
 }
 
 func raceDetailsHandler(w http.ResponseWriter, r *http.Request) {
-	raceID := 841
+	raceID := goDbApi.GetRandomRaceId()
 	details, err := goDbApi.GetRaceDetails(raceID)
 
 	if err != nil {
@@ -123,6 +97,31 @@ func raceDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(details)
+}
+
+
+func randomReadHandler(w http.ResponseWriter, r *http.Request) {
+	reqcnt++
+	log.Println("req", reqcnt);
+	
+	mod := reqcnt % 6
+
+	switch mod {
+		case 0:
+			raceDetailsHandler(w, r)
+		case 1:
+			avgLapTimesHandler(w, r)
+		case 2: 
+			avgPitstopsHandler(w, r)
+		case 3:
+			driverResultsYearHandler(w, r)
+		case 4:
+			raceDetailsHandler(w, r)
+		case 5:
+			driverResultsYearHandler(w, r)
+		default:
+			log.Panicln("unhandled mod => ", mod)
+	}
 }
 
 
@@ -141,12 +140,12 @@ func main() {
 	r := mux.NewRouter()
 	r.Use(StandardHeadersMiddleware)
 
-	r.HandleFunc("/api/blogPost/{id}", blogPostHandler).Methods("GET")
-	r.HandleFunc("/api/randomBlogPost", randomBlogPostHandler).Methods("GET")
 	r.HandleFunc("/api/driverResultsYear", driverResultsYearHandler).Methods("GET")
 	r.HandleFunc("/api/avgPitsotps", avgPitstopsHandler).Methods("GET")
 	r.HandleFunc("/api/avgLaptimes", avgLapTimesHandler).Methods("GET")
 	r.HandleFunc("/api/raceDetails", raceDetailsHandler).Methods("GET")
+
+	r.HandleFunc("/api/randomRead", randomReadHandler).Methods("GET")
 
 	address := "localhost:8098"
 

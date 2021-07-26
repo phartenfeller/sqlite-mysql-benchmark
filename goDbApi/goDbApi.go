@@ -3,80 +3,74 @@ package goDbApi
 import (
 	"database/sql"
 	"errors"
-	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var DB *sql.DB
-var Posts int
+var raceIDs []int
+var seasons []int
 
-func initTables() {
-	dbTables, err := ioutil.ReadFile("./db/tables.sql")
+func queryRaceIDs() (ids []int) {
+	queryStmt := `select raceId from races`
 
-	if err != nil {
-		log.Panic(err)
-}
-
-	log.Println("tables", string(dbTables))
-
-	res, err := DB.Exec(string(dbTables))
-	if err != nil {
-			log.Panic(err)
-	}
-
-	log.Println("res", res)
-}
-
-func insertData() {
-	inserts, err := ioutil.ReadFile("./db/inserts.sql")
-
-	if err != nil {
-		log.Panic(err)
-	}
-
-	// log.Println("inserts", string(inserts))
-
-	tx, err := DB.Begin()
-
-	if err != nil {
-		log.Panic(err)
-	}
-
-	res2, err := tx.Exec(string(inserts))
-  if err != nil {
-      log.Panic(err)
-  }
-
-	log.Println("res2", res2)
-
-	err = tx.Commit()
-
-	if err != nil {
-		log.Panic(err)
-	}
-
-	log.Println("inserted all data...")
-}
-
-func queryDataCount() {
-	queryStmt := "SELECT count(*) FROM blog_posts"
 	rows, err := DB.Query(queryStmt)
+
 	if err != nil {
-		log.Panic(err)
+		log.Panicln("Cannot query raceIds", err.Error())
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
-			var count int64
-			err = rows.Scan(&count)
+			var id int
+			err := rows.Scan(&id)
 			if err != nil {
-					log.Panic(err)
+				log.Panicln("Cannot scan raceId", err.Error())
 			}
-			log.Println("Rowcount:", count)
-			Posts = int(count)
+			ids = append(ids, id)
 	}
+
+	return ids
+}
+
+func querySeasons() (seasons []int) {
+	queryStmt := `select year from seasons`
+
+	rows, err := DB.Query(queryStmt)
+
+	if err != nil {
+		log.Panicln("Cannot query seasons", err.Error())
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+			var season int
+			err := rows.Scan(&season)
+			if err != nil {
+				log.Panicln("Cannot scan season", err.Error())
+			}
+			seasons = append(seasons, season)
+	}
+
+	return seasons
+}
+
+func GetRandomRaceId () int {
+	id := raceIDs[rand.Intn(len(raceIDs))]
+	log.Println("raceId", id)
+	return id
+}
+
+func GetRandomSeason () int {
+	year := seasons[rand.Intn(len(seasons))]
+	log.Println("year", year)
+	return year
 }
 
 // InitDb initializes the db
@@ -95,6 +89,11 @@ func InitDb() {
 	}
 
 	DB = db
+
+	rand.Seed(time.Now().Unix())
+
+	raceIDs = queryRaceIDs()
+	seasons = querySeasons()
 }
 
 // Post struct
@@ -106,29 +105,10 @@ type Post struct {
 	CreatedAt string `json:"createAt"`
 }
 
-func GetBlogpostById (id string) (Post, error) {
-	var post Post
-
-	queryStmt := `SELECT post_id
-	                   , content
-	                   , title
-	                   , slug
-	                   , created_dt 
-								  FROM blog_posts where post_id = ?`
-	row := DB.QueryRow(queryStmt, id)
-
-	err := row.Scan(&post.PostID, &post.Content, &post.Title, &post.Slug, &post.CreatedAt)
-	if err != nil {
-		return post, err
-	}
-	
-	return post, nil
-}
-
 type DriverStandings struct {
 	Forename string `json:"forename"`
 	Surname string `json:"surname"`
-	Points int `json:"points"`
+	Points float32 `json:"points"`
 	Position int `json:"position"`
 	Wins int `json:"wins"`
 }
@@ -236,7 +216,7 @@ func GetAvgBestLapTimes (raceID int) (lapTimes []AvgLapTime, err error) {
 					, d.surname
 					, r2.name as race
 					, row_number() over (partition by l.raceId, l.driverId order by l.milliseconds) as lap_rank
-					, (select max(lap) from lapTimes il where il.raceId = l.raceId) as lap_count
+					, lp.lap_count
 				from lapTimes l
 				join drivers d
 					on l.driverId = d.driverId
@@ -244,6 +224,7 @@ func GetAvgBestLapTimes (raceID int) (lapTimes []AvgLapTime, err error) {
 					on l.raceId = r.raceId
 				and l.driverId = r.driverId
 				join races r2 on r.raceid = r2.raceid
+				cross join (select max(lap) as lap_count from lapTimes il where il.raceId = $1) as lp
 			where l.milliseconds < (select min(il.milliseconds) * 1.5 from lapTimes il where il.raceId = l.raceId)
 				and l.raceid = $1
 		) lapTimes
