@@ -99,6 +99,18 @@ func raceDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(details)
 }
 
+func addLapTimeHandler (w http.ResponseWriter, r *http.Request) {
+	l, err := goDbApi.InsertLapTime()
+
+	if err != nil {
+		logError(err)
+		SendJSONErrorLog(w, "Unexpected server error - ", http.StatusInternalServerError, "Cannot query race details: "+err.Error())
+		return
+	}
+
+	json.NewEncoder(w).Encode(l)
+}
+
 
 func randomReadHandler(w http.ResponseWriter, r *http.Request) {
 	reqcnt++
@@ -144,6 +156,7 @@ func main() {
 	r.HandleFunc("/api/avgPitsotps", avgPitstopsHandler).Methods("GET")
 	r.HandleFunc("/api/avgLaptimes", avgLapTimesHandler).Methods("GET")
 	r.HandleFunc("/api/raceDetails", raceDetailsHandler).Methods("GET")
+	r.HandleFunc("/api/addLapTime", addLapTimeHandler).Methods("GET")
 
 	r.HandleFunc("/api/randomRead", randomReadHandler).Methods("GET")
 

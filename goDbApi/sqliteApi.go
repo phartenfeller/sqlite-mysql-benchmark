@@ -20,6 +20,11 @@ func initSqlite() (*sql.DB, error)  {
 
 	}
 
+	_,err = db.Exec("PRAGMA foreign_keys = ON")
+	if err != nil {
+		return nil, errors.New("Cannot enable FKs for SQLite" + err.Error())
+	}
+
 	log.Println("Initilized SQLite...")
 
 	return db, nil

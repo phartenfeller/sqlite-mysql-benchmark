@@ -12,66 +12,6 @@ import (
 )
 
 var DB *sql.DB
-var raceIDs []int
-var seasons []int
-
-func queryRaceIDs() (ids []int) {
-	queryStmt := `select raceId from races`
-
-	rows, err := DB.Query(queryStmt)
-
-	if err != nil {
-		log.Panicln("Cannot query raceIds", err.Error())
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-			var id int
-			err := rows.Scan(&id)
-			if err != nil {
-				log.Panicln("Cannot scan raceId", err.Error())
-			}
-			ids = append(ids, id)
-	}
-
-	return ids
-}
-
-func querySeasons() (seasons []int) {
-	queryStmt := `select year from seasons`
-
-	rows, err := DB.Query(queryStmt)
-
-	if err != nil {
-		log.Panicln("Cannot query seasons", err.Error())
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-			var season int
-			err := rows.Scan(&season)
-			if err != nil {
-				log.Panicln("Cannot scan season", err.Error())
-			}
-			seasons = append(seasons, season)
-	}
-
-	return seasons
-}
-
-func GetRandomRaceId () int {
-	id := raceIDs[rand.Intn(len(raceIDs))]
-	log.Println("raceId", id)
-	return id
-}
-
-func GetRandomSeason () int {
-	year := seasons[rand.Intn(len(seasons))]
-	log.Println("year", year)
-	return year
-}
 
 // InitDb initializes the db
 func InitDb() {
@@ -92,8 +32,9 @@ func InitDb() {
 
 	rand.Seed(time.Now().Unix())
 
-	raceIDs = queryRaceIDs()
-	seasons = querySeasons()
+	queryRaceIDs()
+	querySeasons()
+	queryDriverIDs()
 }
 
 // Post struct
