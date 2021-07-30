@@ -21,7 +21,6 @@ func initPg() (*sql.DB, error)  {
 		return nil, errors.New("Error initializing Postgres" + err.Error())
 	}
 
-
 	log.Println("Initilized Postgres...")
 
 	return db, nil

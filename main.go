@@ -104,11 +104,35 @@ func addLapTimeHandler (w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		logError(err)
-		SendJSONErrorLog(w, "Unexpected server error - ", http.StatusInternalServerError, "Cannot query race details: "+err.Error())
+		SendJSONErrorLog(w, "Unexpected server error - ", http.StatusInternalServerError, "Cannot insert: "+err.Error())
 		return
 	}
 
 	json.NewEncoder(w).Encode(l)
+}
+
+func updateLapTimeHandler (w http.ResponseWriter, r *http.Request) {
+	err := goDbApi.UpdateLaptime()
+
+	if err != nil {
+		logError(err)
+		SendJSONErrorLog(w, "Unexpected server error - ", http.StatusInternalServerError, "Cannot update: "+err.Error())
+		return
+	}
+
+	json.NewEncoder(w).Encode("Great Succes!")
+}
+
+func deleteLapTimeHandler (w http.ResponseWriter, r *http.Request) {
+	err := goDbApi.DeleteLaptime()
+
+	if err != nil {
+		logError(err)
+		SendJSONErrorLog(w, "Unexpected server error - ", http.StatusInternalServerError, "Cannot delete: "+err.Error())
+		return
+	}
+
+	json.NewEncoder(w).Encode("Great Succes!")
 }
 
 
@@ -131,6 +155,54 @@ func randomReadHandler(w http.ResponseWriter, r *http.Request) {
 			raceDetailsHandler(w, r)
 		case 5:
 			driverResultsYearHandler(w, r)
+		default:
+			log.Panicln("unhandled mod => ", mod)
+	}
+}
+
+func randomReadWriteHandler(w http.ResponseWriter, r *http.Request) {
+	reqcnt++
+	log.Println("req", reqcnt);
+	
+	mod := reqcnt % 9
+
+	switch mod {
+		case 0:
+			raceDetailsHandler(w, r)
+		case 1:
+			avgLapTimesHandler(w, r)
+		case 2: 
+			addLapTimeHandler(w, r)
+		case 3:
+			avgPitstopsHandler(w, r)
+		case 4:
+			driverResultsYearHandler(w, r)
+		case 5:
+			deleteLapTimeHandler(w, r)
+		case 6:
+			driverResultsYearHandler(w, r)
+		case 7:
+			raceDetailsHandler(w, r)
+		case 8:
+			updateLapTimeHandler(w, r)
+		default:
+			log.Panicln("unhandled mod => ", mod)
+	}
+}
+
+func randomWriteHandler(w http.ResponseWriter, r *http.Request) {
+	reqcnt++
+	log.Println("req", reqcnt);
+	
+	mod := reqcnt % 3
+
+	switch mod {
+		case 0:
+			addLapTimeHandler(w, r)
+		case 1:
+			updateLapTimeHandler(w, r)
+		case 2: 
+			deleteLapTimeHandler(w, r)	
 		default:
 			log.Panicln("unhandled mod => ", mod)
 	}
@@ -159,6 +231,8 @@ func main() {
 	r.HandleFunc("/api/addLapTime", addLapTimeHandler).Methods("GET")
 
 	r.HandleFunc("/api/randomRead", randomReadHandler).Methods("GET")
+	r.HandleFunc("/api/randomReadWrite", randomReadWriteHandler).Methods("GET")
+	r.HandleFunc("/api/randomWrite", randomWriteHandler).Methods("GET")
 
 	address := "localhost:8098"
 
