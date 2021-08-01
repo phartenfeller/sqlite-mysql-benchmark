@@ -100,7 +100,7 @@ func raceDetailsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func addLapTimeHandler (w http.ResponseWriter, r *http.Request) {
-	l, err := goDbApi.InsertLapTime()
+	l, err := goDbApi.InsertLapTime(reqcnt)
 
 	if err != nil {
 		logError(err)

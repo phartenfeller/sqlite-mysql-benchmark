@@ -15,10 +15,10 @@ type LapTime struct {
 	Milliseconds int `json:"milliseconds"`
 }
 
-func InsertLapTime() (l LapTime, err error) {
+func InsertLapTime(id int) (l LapTime, err error) {
 	l.RaceID = GetRandomRaceId()
 	l.DriverID = GetRandomDriver()
-	l.Lap = rand.Intn(90) + 100
+	l.Lap = id + 100
 	l.Position = rand.Intn(22)
 	l.Time = "11:" + strconv.Itoa(rand.Intn(59)) + "." + strconv.Itoa(rand.Intn(999))
 	l.Milliseconds = rand.Intn(999999)
@@ -57,7 +57,7 @@ func UpdateLaptime() (err error) {
 		return errors.New("Cannot begin update transaction: " + err.Error())
 	}
 
-	stmt := "UPDATE lapTimes SET milliseconds = milliseconds + 1, lap = lap * lap, position = position * 2 WHERE driverId = $1 and raceId = $2 and lap = $3"
+	stmt := "UPDATE lapTimes SET milliseconds = milliseconds + 1, position = position * position WHERE driverId = $1 and raceId = $2 and lap = $3"
 
 	_, err = tx.Exec(stmt, driverID, raceID, lap)
 

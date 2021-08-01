@@ -16,6 +16,8 @@ func initPg() (*sql.DB, error)  {
 
 	}
 
+	db.SetMaxOpenConns(100)
+
 	err = db.Ping()
 	if err != nil {
 		return nil, errors.New("Error initializing Postgres" + err.Error())
